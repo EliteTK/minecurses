@@ -5,7 +5,7 @@ LDFLAGS := -lncurses
 SRCPATH := ./src
 BUILDPATH := ./build
 
-SOURCES := minesweeper.c
+SOURCES := minesweeper.c main.c
 OBJECTS := $(addprefix $(BUILDPATH)/,$(SOURCES:%.c=%.o))
 SOURCES := $(addprefix $(SRCPATH)/,$(SOURCES))
 
@@ -18,3 +18,7 @@ all : $(OBJECTS)
 
 $(BUILDPATH)/%.o : $(SRCPATH)/%.c
 	$(CC) $(CFLAGS) -o $@ $^
+
+clean :
+	rm $(BUILDPATH)/*
+	rm $(OUTFILE)

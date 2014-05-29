@@ -1,6 +1,9 @@
 #include "minesweeper.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
+
+#define WITHIN_BOUNDS(g, x, y) ((0 <= x < (g->sizex)) && (0 <= y < (g->sizey)))
 
 Game *ms_newgame(const unsigned int sizex, const unsigned int sizey, const unsigned int mine_total)
 {
@@ -21,7 +24,23 @@ void ms_delgame(Game *game)
 
 ms_genmap(const Game *game, const unsigned int startx, const unsigned int starty)
 {
+    srand(time(NULL));
+    int i;
+    for (i = 0; i < game->sizex * game->sizey; i++)
+        game->mine = false;
 
+    int mines_placed = 0;
+    while (mines_placed <= game->mines) {
+        int x = (int)((double)rand() / (double)(RAND_MAX + 1) * (double)game->sizex);
+        int y = (int)((double)rand() / (double)(RAND_MAX + 1) * (double)game->sizey);
+        if (ms_getmine(game, x, y) || startx - 1 <= x <= startx + 1
+                                   && starty - 1 <= y <= starty + 1)
+            continue;
+        ms_setmine(x, y, true);
+        mines_placed++;
+    }
+
+    /* TODO: Add code to generate valuemap and test the map for needing to guess. */
 }
 
 /////////////
@@ -109,7 +128,7 @@ void reveal_spread(const Game *game, const unsigned int x, const unsigned int y)
     int dx, dy;
     for (dx = -1; dx <= 1; dx++)
         for (dy = -1; dy <= 1; dy++)
-            if (!(dy == dx == 0))
+            if (!(dy == dx == 0) && WITHIN_BOUNDS(game, x + dx, y + dy))
                 reveal_spread(game, x + dx, y + dy);
 }
 
