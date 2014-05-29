@@ -16,11 +16,15 @@ Game *ms_newgame(const unsigned int sizex, const unsigned int sizey, const unsig
     game->sizey = sizey;
     game->mines = mine_total;
     game->flags = 0;
+    game->generated = false;
     return game;
 }
 
 void ms_delgame(Game *game)
 {
+    int i;
+    for (i = 0; i < game->sizex * game->sizey; i++)
+        free(game->grid[i]);
     free(game->grid);
     free(game);
 }
@@ -41,8 +45,13 @@ void ms_genmap(const Game *game, const unsigned int startx, const unsigned int s
     // Clear minefield.
     int x, y;
     for (x = 0; x < game->sizex; x++)
-        for (y = 0; y < game->sizey; y++)
+        for (y = 0; y < game->sizey; y++) {
             ms_setmine(game, x, y, false);
+            ms_setvisible(game, x, y, false);
+            ms_setflag(game, x, y, false);
+            ms_setquery(game, x, y, false);
+            ms_setvisible(game, x, y, false);
+        }
 
     // Generate minefield.
     srand(time(NULL));
@@ -61,6 +70,8 @@ void ms_genmap(const Game *game, const unsigned int startx, const unsigned int s
     for (x = 0; x < game->sizex; x++)
         for (y = 0; y < game->sizey; y++)
             ms_setvalue(game, x, y, calc_value(game, x, y));
+
+    ms_reveal(game, startx, starty);
 }
 
 /////////////
@@ -158,6 +169,11 @@ void reveal_spread(const Game *game, const unsigned int x, const unsigned int y)
 
 bool ms_reveal(const Game *game, const unsigned int x, const unsigned int y)
 {
+    // If the map hasn't been generated, generate it using the current reveal
+    // coords as the start pos.
+    if (!game->generated)
+        ms_genmap(game, x, y);
+
     // If the current tile has a mine, return false (signal that a mine was hit).
     if (ms_getmine(game, x, y))
         return false;

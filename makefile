@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -O2 -c -std=c11 -Wall -Werror -Wpedantic
+CFLAGS := -O2 -c -Wall -Werror
 LDFLAGS := -lncurses -lm
 
 SRCPATH := ./src
