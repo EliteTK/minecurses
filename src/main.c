@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define MINE_DENSITY 0.145
+#define MINE_DENSITY 0.15
 
 enum colorpairs {
     N1 = 1, // COLOR_BLUE + 8
@@ -106,7 +106,8 @@ int main(int argc, char **argv)
                 }
                 update = true;
                 break;
-            case 'R': // TODO: AOE Reveal.
+
+            case 'R': // AOE Reveal.
                 if (game->generated) {
                     failed = !ms_reveal_aoe(game, cx, cy);
                 }
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
                     move(x, y);
 
                     if (!ms_getvisible(game, x, y)) {
-                        if (failed && ms_getmine(game, x, y)) {
+                        if (failed && ms_getmine(game, x, y) && !ms_getflag(game, x, y)) {
                             attron(COLOR_PAIR(MINE));
                             addch('*');
                             attroff(COLOR_PAIR(MINE));

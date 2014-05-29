@@ -189,8 +189,8 @@ bool ms_reveal_aoe(const Game *game, const unsigned int x, const unsigned int y)
         for (dx = -1; dx <= 1; dx++)
             for (dy = -1; dy <= 1; dy++)
                 if (WITHIN_BOUNDS(game, x + dx, y + dy)
-                        && !ms_getvisible(game, x, y)
-                        && ms_getflag(game, x, y))
+                        && !ms_getvisible(game, x + dx, y + dy)
+                        && ms_getflag(game, x + dx, y + dy))
                     flagtotal++;
 
         if (flagtotal != value)
@@ -199,8 +199,8 @@ bool ms_reveal_aoe(const Game *game, const unsigned int x, const unsigned int y)
         bool failure = false;
         for (dx = -1; dx <= 1; dx++)
             for (dy = -1; dy <= 1; dy++)
-                if (WITHIN_BOUNDS(game, x + dx, y + dy))
-                    failure = failure || ms_reveal(game, dx + x, dy + y);
+                if (WITHIN_BOUNDS(game, x + dx, y + dy) && !ms_getflag(game, x + dx, y + dy))
+                    failure = failure || !ms_reveal(game, dx + x, dy + y);
 
         return !failure;
     }
