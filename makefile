@@ -1,6 +1,6 @@
 CC := gcc
-CFLAGS := -O2 -c
-LDFLAGS := -lncurses
+CFLAGS := -O2 -c -std=c11 -Wall -Werror -Wpedantic
+LDFLAGS := -lncurses -lm
 
 SRCPATH := ./src
 BUILDPATH := ./build
@@ -13,7 +13,7 @@ OUTFILE := minecurses
 
 DESTDIR := /usr/bin
 
-all : $(OBJECTS)
+$(OUTFILE) : $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $(OUTFILE) $^
 
 $(BUILDPATH)/%.o : $(SRCPATH)/%.c
