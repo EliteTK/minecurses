@@ -40,7 +40,7 @@ unsigned char calc_value(const Game *game, const unsigned int x, const unsigned 
     return value;
 }
 
-void ms_genmap(const Game *game, const unsigned int startx, const unsigned int starty)
+void ms_genmap(Game *game, const unsigned int startx, const unsigned int starty)
 {
     // Clear minefield.
     int x, y;
@@ -70,6 +70,8 @@ void ms_genmap(const Game *game, const unsigned int startx, const unsigned int s
     for (x = 0; x < game->sizex; x++)
         for (y = 0; y < game->sizey; y++)
             ms_setvalue(game, x, y, calc_value(game, x, y));
+
+    game->generated = true;
 
     ms_reveal(game, startx, starty);
 }
@@ -169,11 +171,6 @@ void reveal_spread(const Game *game, const unsigned int x, const unsigned int y)
 
 bool ms_reveal(const Game *game, const unsigned int x, const unsigned int y)
 {
-    // If the map hasn't been generated, generate it using the current reveal
-    // coords as the start pos.
-    if (!game->generated)
-        ms_genmap(game, x, y);
-
     // If the current tile has a mine, return false (signal that a mine was hit).
     if (ms_getmine(game, x, y))
         return false;
@@ -181,5 +178,31 @@ bool ms_reveal(const Game *game, const unsigned int x, const unsigned int y)
     // Otherwise, spread from the current tile outwards and return a successful
     // hit of a clear tile (true).
     reveal_spread(game, x, y);
+    return true;
+}
+
+bool ms_reveal_aoe(const Game *game, const unsigned int x, const unsigned int y)
+{
+    unsigned char value;
+    if (ms_getvisible(game, x, y) && (value = ms_getvalue(game, x, y))) {
+        int dx, dy, flagtotal = 0;
+        for (dx = -1; dx <= 1; dx++)
+            for (dy = -1; dy <= 1; dy++)
+                if (WITHIN_BOUNDS(game, x + dx, y + dy)
+                        && !ms_getvisible(game, x, y)
+                        && ms_getflag(game, x, y))
+                    flagtotal++;
+
+        if (flagtotal != value)
+            return true;
+
+        bool failure = false;
+        for (dx = -1; dx <= 1; dx++)
+            for (dy = -1; dy <= 1; dy++)
+                if (WITHIN_BOUNDS(game, x + dx, y + dy))
+                    failure = failure || ms_reveal(game, dx + x, dy + y);
+
+        return !failure;
+    }
     return true;
 }

@@ -1,3 +1,4 @@
+// TODO: Clean this mess up.
 #include "minesweeper.h"
 #include <ncurses.h>
 #include <stdio.h>
@@ -72,7 +73,7 @@ int main(int argc, char **argv)
     bool run = true, update = true;
     int cx = 0, cy = 0;
     move(cx, cy);
-    while (run) {
+    while (run && !failed) {
         char c = getch();
         switch (c) {
             // Cursor motion.
@@ -96,9 +97,25 @@ int main(int argc, char **argv)
             case 'D': case 'L':
                 if (cy < (height - 5)) cy += 5; break;
 
-            case ' ': // Reveal.
-                if (!ms_getvisible(game, cx, cy))
-                    failed = !ms_reveal(game, cx, cy);
+            case 'r': // Reveal.
+                if (game->generated) {
+                    if (!ms_getvisible(game, cx, cy))
+                        failed = !ms_reveal(game, cx, cy);
+                } else {
+                    ms_genmap(game, cx, cy);
+                }
+                update = true;
+                break;
+            case 'R': // TODO: AOE Reveal.
+                if (game->generated) {
+                    failed = !ms_reveal_aoe(game, cx, cy);
+                }
+                update = true;
+                break;
+
+            case 'f': // Flag
+                if (game->generated && !ms_getvisible(game, cx, cy))
+                    ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
                 update = true;
                 break;
 
@@ -163,6 +180,9 @@ int main(int argc, char **argv)
         }
         move(cx, cy);
     }
+
+    if (failed)
+        getch();
 
     ms_delgame(game);
     endwin();

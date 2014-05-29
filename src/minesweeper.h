@@ -21,7 +21,7 @@ typedef struct {
 
 Game *ms_newgame(const unsigned int, const unsigned int, const unsigned int);
 void ms_delgame(Game *);
-void ms_genmap(const Game *game, const unsigned int startx, const unsigned int starty);
+void ms_genmap(Game *game, const unsigned int startx, const unsigned int starty);
 Square *ms_getsquare(const Game *, const unsigned int, const unsigned int);
 bool ms_getmine(const Game *, const unsigned int, const unsigned int);
 bool ms_getvisible(const Game *, const unsigned int, const unsigned int);
@@ -35,6 +35,7 @@ void ms_setflag(const Game *, const unsigned int, const unsigned int, const bool
 void ms_setquery(const Game *, const unsigned int, const unsigned int, const bool);
 void ms_setvalue(const Game *, const unsigned int, const unsigned int, const unsigned char);
 bool ms_reveal(const Game *, const unsigned int, const unsigned int);
+bool ms_reveal_aoe(const Game *, const unsigned int, const unsigned int);
 
 #define __minesweeper_h 1
 #endif
