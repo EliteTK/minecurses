@@ -7,7 +7,7 @@
 
 #define MINE_DENSITY 0.15
 
-enum colorpairs {
+typedef enum {
     N1 = 1, // COLOR_BLUE + 8
     N2, // COLOR_GREEN
     N3, // COLOR_RED + 8
@@ -25,16 +25,123 @@ enum colorpairs {
 
     MINE, // COLOR_BLACK
     NMINE, // COLOR_RED + 8
-};
+} Colorpairs;
 
-typedef struct {
-    unsigned int x;
-    unsigned int y;
-} Coord;
+static bool failed = false;
+static Game *game;
+
+static inline void put_square(const Colorpairs cp, char c)
+{
+    attron(COLOR_PAIR(cp));
+    addch(c);
+    attroff(COLOR_PAIR(cp));
+}
+
+static void draw_board()
+{
+    int x, y;
+    for (x = 0; x < game->sizex; x++)
+        for (y = 0; y < game->sizey; y++) {
+            move(x, y);
+
+            if (!ms_getvisible(game, x, y)) {
+                if (failed && ms_getmine(game, x, y) && !ms_getflag(game, x, y)) {
+                    put_square(MINE, '*');
+                    continue;
+                }
+
+                if (ms_getflag(game, x, y)) {
+                    if (failed && !ms_getmine(game, x, y)) {
+                        put_square(NMINE, '*');
+                        continue;
+                    }
+
+                    put_square(FLAG, 'X');
+                    continue;
+                }
+
+                if (ms_getquery(game, x, y)) {
+                    put_square(QUERY, '?');
+                    continue;
+                }
+
+                put_square(HIDDEN, ' ');
+                continue;
+            }
+
+            if (!ms_getvalue(game, x, y)) {
+                put_square(VISIBLE, ' ');
+                continue;
+            }
+
+            unsigned char value = ms_getvalue(game, x, y);
+            put_square(value, value + '0');
+        }
+    refresh();
+}
+
+static void run_game()
+{
+    int cx = game->sizex / 2, cy = game->sizey / 2;
+    move(cx, cy);
+    while (!failed) {
+        char c = getch();
+        switch (c) {
+            // Cursor motion.
+            case 'w': case 'k':
+                if (cx > 0) cx--; break;
+            case 'W': case 'K':
+                if (cx > 4) cx -= 5; break;
+
+            case 's': case 'j':
+                if (cx < (game->sizex - 1)) cx++; break;
+            case 'S': case 'J':
+                if (cx < (game->sizex - 5)) cx += 5; break;
+
+            case 'a': case 'h':
+                if (cy > 0) cy--; break;
+            case 'A': case 'H':
+                if (cy > 4) cy -= 5; break;
+
+            case 'd': case 'l':
+                if (cy < (game->sizey - 1)) cy++; break;
+            case 'D': case 'L':
+                if (cy < (game->sizey - 5)) cy += 5; break;
+
+            case 'r': // Reveal.
+                if (game->generated) {
+                    if (!ms_getvisible(game, cx, cy))
+                        failed = !ms_reveal(game, cx, cy);
+                } else {
+                    ms_genmap(game, cx, cy);
+                }
+                draw_board();
+                break;
+
+            case 'R': // AOE Reveal.
+                if (game->generated) {
+                    failed = !ms_reveal_aoe(game, cx, cy);
+                }
+                draw_board();
+                break;
+
+            case 'f': // Flag
+                if (game->generated && !ms_getvisible(game, cx, cy))
+                    ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
+                draw_board();
+                break;
+
+            case 'q': // Quit
+                return;
+        }
+        move(cx, cy);
+        if (failed) return;
+    }
+}
 
 int main(int argc, char **argv)
 {
-    bool failed = false;
+    /*bool failed = false;*/
     initscr();
     raw();
     noecho();
@@ -56,131 +163,21 @@ int main(int argc, char **argv)
     init_pair(QUERY, COLOR_BLACK, COLOR_BLACK + 8);
 
     init_pair(MINE, COLOR_BLACK, COLOR_BLACK + 8);
-    init_pair(NMINE, COLOR_RED + 8, COLOR_BLACK + 8);
+    init_pair(NMINE, COLOR_YELLOW + 8, COLOR_BLACK + 8);
 
     int width, height;
     getmaxyx(stdscr, width, height);
 
-    Game *game = ms_newgame(width, height, width * height * MINE_DENSITY);
+    game = ms_newgame(width, height, width * height * MINE_DENSITY);
 
     int x, y;
     attron(COLOR_PAIR(HIDDEN));
-    for (x = 0; x < width; x++)
-        for (y = 0; y < height; y++)
+    for (x = 0; x < game->sizex; x++)
+        for (y = 0; y < game->sizey; y++)
             addch(' ');
     attroff(COLOR_PAIR(HIDDEN));
 
-    bool run = true, update = true;
-    int cx = 0, cy = 0;
-    move(cx, cy);
-    while (run && !failed) {
-        char c = getch();
-        switch (c) {
-            // Cursor motion.
-            case 'w': case 'k':
-                if (cx > 0) cx--; break;
-            case 'W': case 'K':
-                if (cx > 4) cx -= 5; break;
-
-            case 's': case 'j':
-                if (cx < (width - 1)) cx++; break;
-            case 'S': case 'J':
-                if (cx < (width - 5)) cx += 5; break;
-
-            case 'a': case 'h':
-                if (cy > 0) cy--; break;
-            case 'A': case 'H':
-                if (cy > 4) cy -= 5; break;
-
-            case 'd': case 'l':
-                if (cy < (height - 1)) cy++; break;
-            case 'D': case 'L':
-                if (cy < (height - 5)) cy += 5; break;
-
-            case 'r': // Reveal.
-                if (game->generated) {
-                    if (!ms_getvisible(game, cx, cy))
-                        failed = !ms_reveal(game, cx, cy);
-                } else {
-                    ms_genmap(game, cx, cy);
-                }
-                update = true;
-                break;
-
-            case 'R': // AOE Reveal.
-                if (game->generated) {
-                    failed = !ms_reveal_aoe(game, cx, cy);
-                }
-                update = true;
-                break;
-
-            case 'f': // Flag
-                if (game->generated && !ms_getvisible(game, cx, cy))
-                    ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
-                update = true;
-                break;
-
-            case 'q': // Quit
-                run = false; break;
-        }
-
-        if (update) {
-            for (x = 0; x < width; x++)
-                for (y = 0; y < height; y++) {
-                    move(x, y);
-
-                    if (!ms_getvisible(game, x, y)) {
-                        if (failed && ms_getmine(game, x, y) && !ms_getflag(game, x, y)) {
-                            attron(COLOR_PAIR(MINE));
-                            addch('*');
-                            attroff(COLOR_PAIR(MINE));
-                            continue;
-                        }
-
-                        if (ms_getflag(game, x, y)) {
-                            if (failed && !ms_getmine(game, x, y)) {
-                                attron(COLOR_PAIR(NMINE));
-                                addch('*');
-                                attroff(COLOR_PAIR(NMINE));
-                                continue;
-                            }
-
-                            attron(COLOR_PAIR(FLAG));
-                            addch('X');
-                            attroff(COLOR_PAIR(FLAG));
-                            continue;
-                        }
-
-                        if (ms_getquery(game, x, y)) {
-                            attron(COLOR_PAIR(QUERY));
-                            addch('?');
-                            attroff(COLOR_PAIR(QUERY));
-                            continue;
-                        }
-
-                        attron(COLOR_PAIR(HIDDEN));
-                        addch(' ');
-                        attroff(COLOR_PAIR(HIDDEN));
-                        continue;
-                    }
-
-                    if (!ms_getvalue(game, x, y)) {
-                        attron(COLOR_PAIR(VISIBLE));
-                        addch(' ');
-                        attroff(COLOR_PAIR(VISIBLE));
-                        continue;
-                    }
-
-                    unsigned char value = ms_getvalue(game, x, y);
-                    attron(COLOR_PAIR(value));
-                    addch(value + '0');
-                    attroff(COLOR_PAIR(value));
-                }
-            refresh();
-            update = false;
-        }
-        move(cx, cy);
-    }
+    run_game();
 
     if (failed)
         getch();

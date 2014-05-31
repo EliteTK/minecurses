@@ -29,7 +29,7 @@ void ms_delgame(Game *game)
     free(game);
 }
 
-unsigned char calc_value(const Game *game, const unsigned int x, const unsigned int y)
+static unsigned char calc_value(const Game *game, const unsigned int x, const unsigned int y)
 {
     // Calculate total value of mines in 3 * 3 area around (x, y).
     int dx, dy, value = 0;
@@ -59,8 +59,8 @@ void ms_genmap(Game *game, const unsigned int startx, const unsigned int starty)
     while (mines_placed <= game->mines) {
         int x = (int)((double)rand() / ((double)RAND_MAX + 1.0) * (double)game->sizex);
         int y = (int)((double)rand() / ((double)RAND_MAX + 1.0) * (double)game->sizey);
-        if (ms_getmine(game, x, y) || ((startx - 1 <= x && x <= startx + 1)
-                                   && (starty - 1 <= y && y <= starty + 1)))
+        if (ms_getmine(game, x, y) || (((signed int)(startx - 1) <= x && x <= startx + 1)
+                                   && ((signed int)(starty - 1) <= y && y <= starty + 1)))
             continue;
         ms_setmine(game, x, y, true);
         mines_placed++;
@@ -148,7 +148,7 @@ void ms_setvalue(const Game *game, const unsigned int x, const unsigned int y, c
 // Main Functionality //
 ////////////////////////
 
-void reveal_spread(const Game *game, const unsigned int x, const unsigned int y)
+static void reveal_spread(const Game *game, const unsigned int x, const unsigned int y)
 {
     // Don't propagate if the current tile is already revealed.
     if (ms_getvisible(game, x, y))
