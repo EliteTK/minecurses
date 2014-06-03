@@ -30,11 +30,11 @@ typedef enum {
 static bool failed = false;
 static Game *game;
 
-static inline void put_square(const Colorpairs cp, char c)
+static inline void put_square(const Colorpairs cp, char c, bool bold)
 {
-    attron(COLOR_PAIR(cp));
+    attron(COLOR_PAIR(cp) | (bold * A_BOLD));
     addch(c);
-    attroff(COLOR_PAIR(cp));
+    attroff(COLOR_PAIR(cp) | (bold * A_BOLD));
 }
 
 static void draw_board()
@@ -46,36 +46,36 @@ static void draw_board()
 
             if (!ms_getvisible(game, x, y)) {
                 if (failed && ms_getmine(game, x, y) && !ms_getflag(game, x, y)) {
-                    put_square(MINE, '*');
+                    put_square(MINE, '*', true);
                     continue;
                 }
 
                 if (ms_getflag(game, x, y)) {
                     if (failed && !ms_getmine(game, x, y)) {
-                        put_square(NMINE, '*');
+                        put_square(NMINE, '*', true);
                         continue;
                     }
 
-                    put_square(FLAG, 'X');
+                    put_square(FLAG, 'X', true);
                     continue;
                 }
 
                 if (ms_getquery(game, x, y)) {
-                    put_square(QUERY, '?');
+                    put_square(QUERY, '?', true);
                     continue;
                 }
 
-                put_square(HIDDEN, ' ');
+                put_square(HIDDEN, ' ', false);
                 continue;
             }
 
             if (!ms_getvalue(game, x, y)) {
-                put_square(VISIBLE, ' ');
+                put_square(VISIBLE, ' ', false);
                 continue;
             }
 
             unsigned char value = ms_getvalue(game, x, y);
-            put_square(value, value + '0');
+            put_square(value, value + '0', false);
         }
     refresh();
 }
@@ -147,23 +147,23 @@ int main(int argc, char **argv)
     noecho();
     start_color();
 
-    init_pair(N1, COLOR_BLUE + 8, COLOR_WHITE);
+    init_pair(N1, COLOR_BLUE/* + 8*/, COLOR_WHITE);
     init_pair(N2, COLOR_GREEN, COLOR_WHITE);
     init_pair(N3, COLOR_RED, COLOR_WHITE);
     init_pair(N4, COLOR_BLUE, COLOR_WHITE);
     init_pair(N5, COLOR_MAGENTA, COLOR_WHITE);
     init_pair(N6, COLOR_CYAN, COLOR_WHITE);
     init_pair(N7, COLOR_BLACK, COLOR_WHITE);
-    init_pair(N8, COLOR_BLACK + 8, COLOR_WHITE);
+    init_pair(N8, COLOR_BLACK/* + 8*/, COLOR_WHITE);
 
     init_pair(VISIBLE, COLOR_WHITE, COLOR_WHITE);
-    init_pair(HIDDEN, COLOR_BLACK + 8, COLOR_BLACK + 8);
+    init_pair(HIDDEN, COLOR_BLACK/* + 8*/, COLOR_BLACK/* + 8*/);
 
-    init_pair(FLAG, COLOR_RED + 8, COLOR_BLACK + 8);
-    init_pair(QUERY, COLOR_BLACK, COLOR_BLACK + 8);
+    init_pair(FLAG, COLOR_RED/* + 8*/, COLOR_BLACK/* + 8*/);
+    init_pair(QUERY, COLOR_BLACK, COLOR_BLACK/* + 8*/);
 
-    init_pair(MINE, COLOR_BLACK, COLOR_BLACK + 8);
-    init_pair(NMINE, COLOR_YELLOW + 8, COLOR_BLACK + 8);
+    init_pair(MINE, COLOR_BLACK, COLOR_BLACK/* + 8*/);
+    init_pair(NMINE, COLOR_YELLOW/* + 8*/, COLOR_BLACK/* + 8*/);
 
     int width, height;
     getmaxyx(stdscr, width, height);
