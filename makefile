@@ -19,6 +19,12 @@ $(OUTFILE) : $(OBJECTS)
 $(BUILDPATH)/%.o : $(SRCPATH)/%.c
 	$(CC) $(CFLAGS) -o $@ $^
 
+install : $(OUTFILE)
+	cp "$(OUTFILE)" "$(DESTDIR)/$(OUTFILE)"
+
+uninstall :
+	rm "$(DESTDIR)/$(OUTFILE)"
+
 clean :
 	rm $(BUILDPATH)/*
 	rm $(OUTFILE)
