@@ -3,6 +3,17 @@ minecurses
 
 NCurses minesweeper.
 
+Controls:
+---------
+hjkl or wasd to move around, r to reveal, f to flag, shift + r is the same as middle click would be on normal minesweeper. I nickname it "AOE reveal".
+
+Working features:
+-----------------
+* Drawing of the game board.
+* Moving the cursor.
+* Basic keyboard input.
+* AOE reveal.
+
 TODO:
 -----
 1. Write a base minesweeper system which has simple io commands allowing it to get different "maps" of the current game state, and input which allows to directly change any piece of the game i.e. reveal a part, flag a mine, or queryflag a mine.
