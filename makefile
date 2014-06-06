@@ -14,6 +14,7 @@ OUTFILE := minecurses
 DESTDIR := /
 PREFIX := /usr
 BINDIR := /bin
+INSPATH := $(DESTDIR)$(PREFIX)$(BINDIR)
 
 $(OUTFILE) : $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $(OUTFILE) $^
@@ -22,10 +23,11 @@ $(BUILDPATH)/%.o : $(SRCPATH)/%.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 install : $(OUTFILE)
-	cp "$(OUTFILE)" "$(DESTDIR)$(PREFIX)$(BINDIR)/$(OUTFILE)"
+	mkdir -p "$(INSPATH)"
+	cp "$(OUTFILE)" "$(INSPATH)/$(OUTFILE)"
 
 uninstall :
-	rm "$(DESTDIR)$(PREFIX)$(BINDIR)/$(OUTFILE)"
+	rm "$(INSPATH)/$(OUTFILE)"
 
 clean :
 	rm $(BUILDPATH)/*
