@@ -1,4 +1,3 @@
-CC := gcc
 CFLAGS := -O2 -c -Wall -Werror
 LDFLAGS := -lncurses -lm
 
@@ -11,7 +10,6 @@ SOURCES := $(addprefix $(SRCPATH)/,$(SOURCES))
 
 OUTFILE := minecurses
 
-DESTDIR := /
 PREFIX := /usr
 BINDIR := /bin
 INSPATH := $(DESTDIR)$(PREFIX)$(BINDIR)
@@ -23,8 +21,7 @@ $(BUILDPATH)/%.o : $(SRCPATH)/%.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 install : $(OUTFILE)
-	mkdir -p "$(INSPATH)"
-	cp "$(OUTFILE)" "$(INSPATH)/$(OUTFILE)"
+	install "$(OUTFILE)" "$(INSPATH)/$(OUTFILE)"
 
 uninstall :
 	rm "$(INSPATH)/$(OUTFILE)"
