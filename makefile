@@ -11,7 +11,9 @@ SOURCES := $(addprefix $(SRCPATH)/,$(SOURCES))
 
 OUTFILE := minecurses
 
-DESTDIR := /usr/bin
+DESTDIR := /
+PREFIX := /usr
+BINDIR := /bin
 
 $(OUTFILE) : $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $(OUTFILE) $^
@@ -20,10 +22,10 @@ $(BUILDPATH)/%.o : $(SRCPATH)/%.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 install : $(OUTFILE)
-	cp "$(OUTFILE)" "$(DESTDIR)/$(OUTFILE)"
+	cp "$(OUTFILE)" "$(DESTDIR)$(PREFIX)$(BINDIR)/$(OUTFILE)"
 
 uninstall :
-	rm "$(DESTDIR)/$(OUTFILE)"
+	rm "$(DESTDIR)$(PREFIX)$(BINDIR)/$(OUTFILE)"
 
 clean :
 	rm $(BUILDPATH)/*
