@@ -82,11 +82,29 @@ static void draw_board()
 
 static void run_game()
 {
+    keypad(stdscr, TRUE);
+
+    MEVENT event;
+    mousemask(BUTTON1_PRESSED || BUTTON2_CLICKED || BUTTON3_CLICKED, NULL);
+
+    int c;
+
     int cx = game->sizex / 2, cy = game->sizey / 2;
     move(cx, cy);
+
     while (!failed) {
-        char c = getch();
+        c = getch();
         switch (c) {
+            // Mouse input.
+            case KEY_MOUSE:
+                if (getmouse(&event) == OK)
+                    if (event.bstate & BUTTON1_PRESSED) {
+                        cx = event.x;
+                        cy = event.y;
+                        fprintf(stderr, "Click at: %d, %d.\n", event.x, event.y);
+                    }
+                break;
+
             // Cursor motion.
             case 'w': case 'k':
                 if (cx > 0) cx--; break;
@@ -107,6 +125,7 @@ static void run_game()
                 if (cy < (game->sizey - 1)) cy++; break;
             case 'D': case 'L':
                 if (cy < (game->sizey - 5)) cy += 5; break;
+
 
             case 'r': // Reveal.
                 if (game->generated) {
@@ -143,8 +162,9 @@ int main(int argc, char **argv)
 {
     /*bool failed = false;*/
     initscr();
-    raw();
+    cbreak();
     noecho();
+    halfdelay(1);
     start_color();
 
     init_pair(N1, COLOR_BLUE/* + 8*/, COLOR_WHITE);
