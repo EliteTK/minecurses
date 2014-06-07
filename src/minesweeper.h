@@ -36,6 +36,7 @@ void ms_setquery(const Game *, const unsigned int, const unsigned int, const boo
 void ms_setvalue(const Game *, const unsigned int, const unsigned int, const unsigned char);
 bool ms_reveal(const Game *, const unsigned int, const unsigned int);
 bool ms_reveal_aoe(const Game *, const unsigned int, const unsigned int);
+bool ms_check_win(const Game *, const unsigned int, const unsigned int);
 
 #define __minesweeper_h 1
 #endif

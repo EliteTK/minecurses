@@ -5,6 +5,9 @@
 
 #define WITHIN_BOUNDS(g, x, y) ((0 <= (x) && (x) < (g->sizex)) && (0 <= (y) && (y) < (g->sizey)))
 
+static unsigned char calc_value(const Game *, const unsigned int, const unsigned int);
+
+// Make a new game (You just lost the game.).
 Game *ms_newgame(const unsigned int sizex, const unsigned int sizey, const unsigned int mine_total)
 {
     Game *game = malloc(sizeof(Game));
@@ -20,6 +23,7 @@ Game *ms_newgame(const unsigned int sizex, const unsigned int sizey, const unsig
     return game;
 }
 
+// Delete the game (You lost the game again.).
 void ms_delgame(Game *game)
 {
     int i;
@@ -29,20 +33,9 @@ void ms_delgame(Game *game)
     free(game);
 }
 
-static unsigned char calc_value(const Game *game, const unsigned int x, const unsigned int y)
-{
-    // Calculate total value of mines in 3 * 3 area around (x, y).
-    int dx, dy, value = 0;
-    for (dx = -1; dx <= 1; dx++)
-        for (dy = -1; dy <= 1; dy++)
-            if (WITHIN_BOUNDS(game, x + dx, y + dy) && ms_getmine(game, x + dx, y + dy))
-                value++;
-    return value;
-}
-
+// Clear the map, randomize the map, and populate the valuemap.
 void ms_genmap(Game *game, const unsigned int startx, const unsigned int starty)
 {
-    // Clear minefield.
     int x, y;
     for (x = 0; x < game->sizex; x++)
         for (y = 0; y < game->sizey; y++) {
@@ -53,7 +46,7 @@ void ms_genmap(Game *game, const unsigned int startx, const unsigned int starty)
             ms_setvisible(game, x, y, false);
         }
 
-    // Generate minefield.
+
     srand(time(NULL));
     int mines_placed = 0;
     while (mines_placed <= game->mines) {
@@ -66,7 +59,7 @@ void ms_genmap(Game *game, const unsigned int startx, const unsigned int starty)
         mines_placed++;
     }
 
-    // Calculate the "value" for each point on the map.
+
     for (x = 0; x < game->sizex; x++)
         for (y = 0; y < game->sizey; y++)
             ms_setvalue(game, x, y, calc_value(game, x, y));
@@ -75,6 +68,20 @@ void ms_genmap(Game *game, const unsigned int startx, const unsigned int starty)
 
     ms_reveal(game, startx, starty);
 }
+
+// Calculate total value of mines in 3 * 3 area around (x, y).
+static unsigned char calc_value(const Game *game, const unsigned int x, const unsigned int y)
+{
+    int dx, dy, value = 0;
+    for (dx = -1; dx <= 1; dx++)
+        for (dy = -1; dy <= 1; dy++)
+            if (WITHIN_BOUNDS(game, x + dx, y + dy) && ms_getmine(game, x + dx, y + dy))
+                value++;
+    return value;
+}
+
+// Class-esque stuff, will be going out of the windows, I have no idea what I
+// was thinking when I first implemented this. Totally worthless.
 
 /////////////
 // Getters //
@@ -131,7 +138,10 @@ void ms_setvisible(const Game *game, const unsigned int x, const unsigned int y,
 
 void ms_setflag(const Game *game, const unsigned int x, const unsigned int y, const bool flag)
 {
-    ms_getsquare(game, x, y)->flag = flag;
+    Square *square = ms_getsquare(game, x, y);
+    if (square->flag != flag)
+        game->flags = flag ? game->flags + 1 : game->flags - 1;
+    square->flag = flag;
 }
 
 void ms_setquery(const Game *game, const unsigned int x, const unsigned int y, const bool query)
@@ -147,21 +157,29 @@ void ms_setvalue(const Game *game, const unsigned int x, const unsigned int y, c
 ////////////////////////
 // Main Functionality //
 ////////////////////////
+static void reveal_spread(const Game *, const unsigned int, const unsigned int);
 
+// Reveal a square, and in certain cases, spread like rabbits.
+bool ms_reveal(const Game *game, const unsigned int x, const unsigned int y)
+{
+    if (ms_getmine(game, x, y))
+        return false;
+
+    reveal_spread(game, x, y);
+    return true;
+}
+
+// The actual working end of the function above.
 static void reveal_spread(const Game *game, const unsigned int x, const unsigned int y)
 {
-    // Don't propagate if the current tile is already revealed.
     if (ms_getvisible(game, x, y))
         return;
 
-    // Make current tile visible.
     ms_setvisible(game, x, y, true);
 
-    // Don't propagate if the current tile has a value > 0.
     if (ms_getvalue(game, x, y))
         return;
 
-    // Spread to all 8 adjacent tiles.
     int dx, dy;
     for (dx = -1; dx <= 1; dx++)
         for (dy = -1; dy <= 1; dy++)
@@ -169,18 +187,8 @@ static void reveal_spread(const Game *game, const unsigned int x, const unsigned
                 reveal_spread(game, x + dx, y + dy);
 }
 
-bool ms_reveal(const Game *game, const unsigned int x, const unsigned int y)
-{
-    // If the current tile has a mine, return false (signal that a mine was hit).
-    if (ms_getmine(game, x, y))
-        return false;
-
-    // Otherwise, spread from the current tile outwards and return a successful
-    // hit of a clear tile (true).
-    reveal_spread(game, x, y);
-    return true;
-}
-
+// Area of effect reveal, if you know what middle click did in old minesweeper,
+// you will certainly understand what this does.
 bool ms_reveal_aoe(const Game *game, const unsigned int x, const unsigned int y)
 {
     unsigned char value;
@@ -204,5 +212,20 @@ bool ms_reveal_aoe(const Game *game, const unsigned int x, const unsigned int y)
 
         return !failure;
     }
+    return true;
+}
+
+// Check if we've won the game yet.
+bool ms_check_win(const Game *game)
+{
+    if (game->mines != game->flags)
+        return false;
+
+    int x, y;
+    for (x = 0, x < game->sizex, x++)
+        for (y = 0, y < game->sizey, y++)
+            if (ms_getmine(game, x, y) != ms_getflag(game, x, y))
+                return false;
+
     return true;
 }
