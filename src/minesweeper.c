@@ -136,7 +136,7 @@ void ms_setvisible(const Game *game, const unsigned int x, const unsigned int y,
     ms_getsquare(game, x, y)->visible = visible;
 }
 
-void ms_setflag(const Game *game, const unsigned int x, const unsigned int y, const bool flag)
+void ms_setflag(Game *game, const unsigned int x, const unsigned int y, const bool flag)
 {
     Square *square = ms_getsquare(game, x, y);
     if (square->flag != flag)
@@ -222,8 +222,8 @@ bool ms_check_win(const Game *game)
         return false;
 
     int x, y;
-    for (x = 0, x < game->sizex, x++)
-        for (y = 0, y < game->sizey, y++)
+    for (x = 0; x < game->sizex; x++)
+        for (y = 0; y < game->sizey; y++)
             if (ms_getmine(game, x, y) != ms_getflag(game, x, y))
                 return false;
 

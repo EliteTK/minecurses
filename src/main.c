@@ -82,10 +82,7 @@ static void draw_board()
 
 static void run_game()
 {
-    keypad(stdscr, TRUE);
-
     MEVENT event;
-    mousemask(BUTTON1_PRESSED || BUTTON2_CLICKED || BUTTON3_CLICKED, NULL);
 
     int c;
 
@@ -97,15 +94,33 @@ static void run_game()
         switch (c) {
             // Mouse input.
             case KEY_MOUSE:
-                if (getmouse(&event) == OK)
-                    if (event.bstate & BUTTON1_PRESSED) {
-                        cx = event.x;
-                        cy = event.y;
-                        fprintf(stderr, "Click at: %d, %d.\n", event.x, event.y);
+                if (getmouse(&event) == OK) {
+                    cx = event.y;
+                    cy = event.x;
+                    if (event.bstate & BUTTON1_CLICKED) {
+                        if (game->generated) {
+                            if (!ms_getvisible(game, cx, cy))
+                                failed = !ms_reveal(game, cx, cy);
+                        } else {
+                            ms_genmap(game, cx, cy);
+                        }
+                        draw_board();
+                    } else if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
+                        if (game->generated) {
+                            failed = !ms_reveal_aoe(game, cx, cy);
+                            draw_board();
+                        }
+                    } else if (event.bstate & BUTTON3_CLICKED) {
+                        if (game->generated && !ms_getvisible(game, cx, cy)) {
+                            ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
+                            draw_board();
+                        }
                     }
+                }
+
                 break;
 
-            // Cursor motion.
+                // Cursor motion.
             case 'w': case 'k':
                 if (cx > 0) cx--; break;
             case 'W': case 'K':
@@ -140,14 +155,15 @@ static void run_game()
             case 'R': // AOE Reveal.
                 if (game->generated) {
                     failed = !ms_reveal_aoe(game, cx, cy);
+                    draw_board();
                 }
-                draw_board();
                 break;
 
             case 'f': // Flag
-                if (game->generated && !ms_getvisible(game, cx, cy))
+                if (game->generated && !ms_getvisible(game, cx, cy)) {
                     ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
-                draw_board();
+                    draw_board();
+                }
                 break;
 
             case 'q': // Quit
@@ -160,11 +176,12 @@ static void run_game()
 
 int main(int argc, char **argv)
 {
-    /*bool failed = false;*/
     initscr();
-    cbreak();
+    clear();
     noecho();
-    halfdelay(1);
+    cbreak();
+    keypad(stdscr, TRUE);
+    mousemask(BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | BUTTON3_CLICKED, NULL);
     start_color();
 
     init_pair(N1, COLOR_BLUE/* + 8*/, COLOR_WHITE);
