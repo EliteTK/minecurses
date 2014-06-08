@@ -8,23 +8,23 @@
 #define MINE_DENSITY 0.15
 
 typedef enum {
-    N1 = 1, // COLOR_BLUE + 8
+    N1 = 1, // COLOR_BLUE
     N2, // COLOR_GREEN
-    N3, // COLOR_RED + 8
+    N3, // COLOR_RED
     N4, // COLOR_BLUE
     N5, // COLOR_RED
     N6, // COLOR_CYAN
     N7, // COLOR_BLACK
-    N8, // COLOR_BLACK + 8
+    N8, // COLOR_BLACK
 
     VISIBLE, // COLOR_WHITE
-    HIDDEN, // COLOR_BLACK + 8
+    HIDDEN, // COLOR_BLACK
 
     FLAG, // COLOR_RED
     QUERY, // COLOR_BLACK
 
     MINE, // COLOR_BLACK
-    NMINE, // COLOR_RED + 8
+    NMINE, // COLOR_RED
 } Colorpairs;
 
 static bool failed = false;
@@ -82,12 +82,45 @@ static void draw_board()
 
 static void run_game()
 {
+    MEVENT event;
+
+    int c;
+
     int cx = game->sizex / 2, cy = game->sizey / 2;
     move(cx, cy);
+
     while (!failed) {
-        char c = getch();
+        c = getch();
         switch (c) {
-            // Cursor motion.
+            // Mouse input.
+            case KEY_MOUSE:
+                if (getmouse(&event) == OK) {
+                    cx = event.y;
+                    cy = event.x;
+                    if (event.bstate & BUTTON1_CLICKED) {
+                        if (game->generated) {
+                            if (!ms_getvisible(game, cx, cy))
+                                failed = !ms_reveal(game, cx, cy);
+                        } else {
+                            ms_genmap(game, cx, cy);
+                        }
+                        draw_board();
+                    } else if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
+                        if (game->generated) {
+                            failed = !ms_reveal_aoe(game, cx, cy);
+                            draw_board();
+                        }
+                    } else if (event.bstate & BUTTON3_CLICKED) {
+                        if (game->generated && !ms_getvisible(game, cx, cy)) {
+                            ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
+                            draw_board();
+                        }
+                    }
+                }
+
+                break;
+
+                // Cursor motion.
             case 'w': case 'k':
                 if (cx > 0) cx--; break;
             case 'W': case 'K':
@@ -108,6 +141,7 @@ static void run_game()
             case 'D': case 'L':
                 if (cy < (game->sizey - 5)) cy += 5; break;
 
+
             case 'r': // Reveal.
                 if (game->generated) {
                     if (!ms_getvisible(game, cx, cy))
@@ -121,14 +155,15 @@ static void run_game()
             case 'R': // AOE Reveal.
                 if (game->generated) {
                     failed = !ms_reveal_aoe(game, cx, cy);
+                    draw_board();
                 }
-                draw_board();
                 break;
 
             case 'f': // Flag
-                if (game->generated && !ms_getvisible(game, cx, cy))
+                if (game->generated && !ms_getvisible(game, cx, cy)) {
                     ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
-                draw_board();
+                    draw_board();
+                }
                 break;
 
             case 'q': // Quit
@@ -141,10 +176,12 @@ static void run_game()
 
 int main(int argc, char **argv)
 {
-    /*bool failed = false;*/
     initscr();
-    raw();
+    clear();
     noecho();
+    cbreak();
+    keypad(stdscr, TRUE);
+    mousemask(BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | BUTTON3_CLICKED, NULL);
     start_color();
 
     init_pair(N1, COLOR_BLUE/* + 8*/, COLOR_WHITE);

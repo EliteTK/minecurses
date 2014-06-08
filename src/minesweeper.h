@@ -31,11 +31,12 @@ unsigned char ms_getvalue(const Game *, const unsigned int, const unsigned int);
 void ms_setsquare(const Game *, const unsigned int, const unsigned int, Square *);
 void ms_setmine(const Game *, const unsigned int, const unsigned int, const bool);
 void ms_setvisible(const Game *, const unsigned int, const unsigned int, const bool);
-void ms_setflag(const Game *, const unsigned int, const unsigned int, const bool);
+void ms_setflag(Game *, const unsigned int, const unsigned int, const bool);
 void ms_setquery(const Game *, const unsigned int, const unsigned int, const bool);
 void ms_setvalue(const Game *, const unsigned int, const unsigned int, const unsigned char);
 bool ms_reveal(const Game *, const unsigned int, const unsigned int);
 bool ms_reveal_aoe(const Game *, const unsigned int, const unsigned int);
+bool ms_check_win(const Game *);
 
 #define __minesweeper_h 1
 #endif
