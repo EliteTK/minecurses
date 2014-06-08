@@ -1,7 +1,6 @@
 // TODO: Clean this mess up.
 #include "minesweeper.h"
 #include <ncurses.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -44,14 +43,14 @@ static void draw_board()
         for (y = 0; y < game->sizey; y++) {
             move(x, y);
 
-            if (!ms_getvisible(game, x, y)) {
-                if (failed && ms_getmine(game, x, y) && !ms_getflag(game, x, y)) {
+            if (!ms_xy_resolve(game, x, y)->visible) {
+                if (failed && ms_xy_resolve(game, x, y)->mine && !ms_xy_resolve(game, x, y)->flag) {
                     put_square(MINE, '*', true);
                     continue;
                 }
 
-                if (ms_getflag(game, x, y)) {
-                    if (failed && !ms_getmine(game, x, y)) {
+                if (ms_xy_resolve(game, x, y)->flag) {
+                    if (failed && !ms_xy_resolve(game, x, y)->mine) {
                         put_square(NMINE, '*', true);
                         continue;
                     }
@@ -60,7 +59,7 @@ static void draw_board()
                     continue;
                 }
 
-                if (ms_getquery(game, x, y)) {
+                if (ms_xy_resolve(game, x, y)->query) {
                     put_square(QUERY, '?', true);
                     continue;
                 }
@@ -69,12 +68,12 @@ static void draw_board()
                 continue;
             }
 
-            if (!ms_getvalue(game, x, y)) {
+            if (!ms_xy_resolve(game, x, y)->value) {
                 put_square(VISIBLE, ' ', false);
                 continue;
             }
 
-            unsigned char value = ms_getvalue(game, x, y);
+            unsigned char value = ms_xy_resolve(game, x, y)->value;
             put_square(value, value + '0', false);
         }
     refresh();
@@ -99,7 +98,7 @@ static void run_game()
                     cy = event.x; // Your guess is as good as mine.
                     if (event.bstate & BUTTON1_CLICKED) {
                         if (game->generated) {
-                            if (!ms_getvisible(game, cx, cy) && !ms_getflag(game, cx, cy))
+                            if (!ms_xy_resolve(game, cx, cy)->visible && !ms_xy_resolve(game, cx, cy)->flag)
                                 failed = !ms_reveal(game, cx, cy);
                         } else {
                             ms_genmap(game, cx, cy);
@@ -111,8 +110,8 @@ static void run_game()
                             draw_board();
                         }
                     } else if (event.bstate & BUTTON3_CLICKED) {
-                        if (game->generated && !ms_getvisible(game, cx, cy)) {
-                            ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
+                        if (game->generated && !ms_xy_resolve(game, cx, cy)->visible) {
+                            ms_flag_toggle(game, cx, cy);
                             draw_board();
                         }
                     }
@@ -144,7 +143,7 @@ static void run_game()
 
             case 'r': // Reveal.
                 if (game->generated) {
-                    if (!ms_getvisible(game, cx, cy))
+                    if (!ms_xy_resolve(game, cx, cy)->visible)
                         failed = !ms_reveal(game, cx, cy);
                 } else {
                     ms_genmap(game, cx, cy);
@@ -160,8 +159,8 @@ static void run_game()
                 break;
 
             case 'f': // Flag
-                if (game->generated && !ms_getvisible(game, cx, cy)) {
-                    ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
+                if (game->generated && !ms_xy_resolve(game, cx, cy)->visible) {
+                    ms_flag_toggle(game, cx, cy);
                     draw_board();
                 }
                 break;
