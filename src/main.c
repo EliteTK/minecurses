@@ -95,11 +95,11 @@ static void run_game()
             // Mouse input.
             case KEY_MOUSE:
                 if (getmouse(&event) == OK) {
-                    cx = event.y;
-                    cy = event.x;
+                    cx = event.y; // No, I don't know why.
+                    cy = event.x; // Your guess is as good as mine.
                     if (event.bstate & BUTTON1_CLICKED) {
                         if (game->generated) {
-                            if (!ms_getvisible(game, cx, cy))
+                            if (!ms_getvisible(game, cx, cy) && !ms_getflag(game, cx, cy))
                                 failed = !ms_reveal(game, cx, cy);
                         } else {
                             ms_genmap(game, cx, cy);

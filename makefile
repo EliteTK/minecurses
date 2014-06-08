@@ -21,7 +21,7 @@ $(BUILDPATH)/%.o : $(SRCPATH)/%.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 install : $(OUTFILE)
-	install -D "$(OUTFILE)" "$(INSPATH)/$(OUTFILE)"
+	install -Dm755 "$(OUTFILE)" "$(INSPATH)/$(OUTFILE)"
 
 uninstall :
 	rm "$(INSPATH)/$(OUTFILE)"
