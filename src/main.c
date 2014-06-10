@@ -4,8 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
-#define MINE_DENSITY 0.15
+#include <getopt.h>
 
 typedef enum {
     N1 = 1, // COLOR_BLUE
@@ -174,8 +173,50 @@ static void run_game()
     }
 }
 
+void usage()
+{
+    fputs("Usage: minecurses [options]\n\n"
+          "Options:\n"
+          "  -h, --help\t\tshow this help message\n"
+          "  -m, --mine-density\tset density of minefield [default: 0.15]\n",
+          stderr);
+    exit(1);
+}
+
 int main(int argc, char **argv)
 {
+    double mine_density = 0;
+
+    if (argc > 1) {
+        int c;
+        
+        while (c != -1) {
+            static struct option options[] = {
+                // Flags
+                {"help",         no_argument,         0, 'h'},
+                // Switches
+                {"mine-density", required_argument,   0, 'm'},
+                {0,              0,                   0, 0},
+            };
+
+            int option_index = 0;
+
+            c = getopt_long(argc, argv, "hm:", options, &option_index);
+
+            switch (c) {
+                case 'h':
+                    usage();
+                    break;
+
+                case 'm':
+                    mine_density = strtod(optarg, NULL);
+                    break;
+            }
+        }
+    }
+
+    if (mine_density <= 0 || mine_density >= 1) mine_density = 0.15;
+
     initscr();
     clear();
     noecho();
@@ -205,7 +246,7 @@ int main(int argc, char **argv)
     int width, height;
     getmaxyx(stdscr, width, height);
 
-    game = ms_newgame(width, height, width * height * MINE_DENSITY);
+    game = ms_newgame(width, height, width * height * mine_density);
 
     int x, y;
     attron(COLOR_PAIR(HIDDEN));
