@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <getopt.h>
 
-#define MINE_DENSITY 0.15
+//#define MINE_DENSITY 0.15
 
 typedef enum {
     N1 = 1, // COLOR_BLUE
@@ -176,6 +177,46 @@ static void run_game()
 
 int main(int argc, char **argv)
 {
+    static int flag_help;
+    static double MINE_DENSITY = 0;
+
+    if (argc > 1) {
+        int c;
+        
+        while (1) {
+            static struct option options[] = {
+                // Flags
+                {"help",         no_argument,         0, 'h'},
+                // Switches
+                {"mine-density", required_argument,   0, 'm'},
+                {0,              0,                   0, 0},
+            };
+
+            int option_index = 0;
+
+            c = getopt_long(argc, argv, "hm:", options, &option_index);
+
+            if (c == -1) break;
+
+            switch (c) {
+                case 'h':
+                    flag_help = 1;
+                    break;
+
+                case 'm':
+                    MINE_DENSITY = strtod(optarg, NULL);
+                    break;
+            }
+        }
+    }
+
+    if (flag_help) {
+        fprintf(stderr, "Usage: minecurses [-h] [-m <MINE_DENSITY>]\n");
+        exit(1);
+    }
+
+    if (MINE_DENSITY <= 0 || MINE_DENSITY > 1) MINE_DENSITY = 0.15;
+
     initscr();
     clear();
     noecho();
