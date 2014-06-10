@@ -6,8 +6,6 @@
 #include <math.h>
 #include <getopt.h>
 
-//#define MINE_DENSITY 0.15
-
 typedef enum {
     N1 = 1, // COLOR_BLUE
     N2, // COLOR_GREEN
@@ -175,15 +173,24 @@ static void run_game()
     }
 }
 
+void usage()
+{
+    fputs("Usage: minecurses [options]\n\n"
+          "Options:\n"
+          "  -h, --help\t\tshow this help message\n"
+          "  -m, --mine-density\tset density of minefield [default: 0.15]\n",
+          stderr);
+    exit(1);
+}
+
 int main(int argc, char **argv)
 {
-    static int flag_help;
-    static double MINE_DENSITY = 0;
+    double mine_density = 0;
 
     if (argc > 1) {
         int c;
         
-        while (1) {
+        while (c != -1) {
             static struct option options[] = {
                 // Flags
                 {"help",         no_argument,         0, 'h'},
@@ -196,26 +203,19 @@ int main(int argc, char **argv)
 
             c = getopt_long(argc, argv, "hm:", options, &option_index);
 
-            if (c == -1) break;
-
             switch (c) {
                 case 'h':
-                    flag_help = 1;
+                    usage();
                     break;
 
                 case 'm':
-                    MINE_DENSITY = strtod(optarg, NULL);
+                    mine_density = strtod(optarg, NULL);
                     break;
             }
         }
     }
 
-    if (flag_help) {
-        fprintf(stderr, "Usage: minecurses [-h] [-m <MINE_DENSITY>]\n");
-        exit(1);
-    }
-
-    if (MINE_DENSITY <= 0 || MINE_DENSITY > 1) MINE_DENSITY = 0.15;
+    if (mine_density <= 0 || mine_density >= 1) mine_density = 0.15;
 
     initscr();
     clear();
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
     int width, height;
     getmaxyx(stdscr, width, height);
 
-    game = ms_newgame(width, height, width * height * MINE_DENSITY);
+    game = ms_newgame(width, height, width * height * mine_density);
 
     int x, y;
     attron(COLOR_PAIR(HIDDEN));
