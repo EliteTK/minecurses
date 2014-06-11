@@ -2,11 +2,17 @@
 #include "graphics.h"
 #include <stdlib.h>
 
-
+static int screenw, screenh;
 
 // Initialise graphics.
 bool ginit()
 {
+    initscr();
+    clear();
+    noecho();
+    cbreak();
+    start_color();
+
     init_pair(N1, COLOR_BLUE, COLOR_WHITE);
     init_pair(N2, COLOR_GREEN, COLOR_WHITE);
     init_pair(N3, COLOR_RED, COLOR_WHITE);
@@ -40,6 +46,14 @@ bool gcleanup()
 
 
 static inline void put_square(const Colorpairs, char, bool);
+
+void draw_menu()
+{
+}
+
+void draw_status()
+{
+}
 
 void draw_board()
 {
@@ -89,4 +103,9 @@ static inline void put_square(const Colorpairs cp, char c, bool bold)
     attron(COLOR_PAIR(cp) | (bold * A_BOLD));
     addch(c);
     attroff(COLOR_PAIR(cp) | (bold * A_BOLD));
+}
+
+
+static inline update_screenwh()
+{
 }

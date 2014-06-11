@@ -26,7 +26,10 @@ typedef enum {
 } Colorpairs;
 
 static bool failed = false;
+static bool won = false;
 static Game *game;
+
+static float mine_density = 0;
 
 static inline void put_square(const Colorpairs cp, char c, bool bold)
 {
@@ -173,7 +176,7 @@ static void run_game()
 }
 
 // Print usage and quit.
-void print_usage(const int fd)
+static void print_usage(const int fd)
 {
     fputs("Usage: minecurses [options]\n\n"
           "Options:\n"
@@ -183,15 +186,15 @@ void print_usage(const int fd)
     exit(1);
 }
 
-int main(int argc, char **argv)
+static void getopts(int argc, char **argv)
 {
-    double mine_density = 0;
-
     if (argc > 1) {
         int c;
 
         while (c != -1) {
-            static struct option options[] = {
+            static struct option options[] = { // Why is this static?
+                // We're only in this function once, and we can declare this
+                // just before you enter the while loop and be done with it.
                 // Flags
                 {"help",         no_argument,         0, 'h'},
                 // Switches
@@ -214,6 +217,10 @@ int main(int argc, char **argv)
             }
         }
     }
+}
+
+int main(int argc, char **argv)
+{
 
     if (mine_density <= 0 || mine_density >= 1) mine_density = 0.15;
 
