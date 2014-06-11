@@ -172,13 +172,14 @@ static void run_game()
     }
 }
 
-void usage()
+// Print usage and quit.
+void print_usage(const int fd)
 {
     fputs("Usage: minecurses [options]\n\n"
           "Options:\n"
           "  -h, --help\t\tshow this help message\n"
           "  -m, --mine-density\tset density of minefield [default: 0.15]\n",
-          stderr);
+          fd);
     exit(1);
 }
 
@@ -188,7 +189,7 @@ int main(int argc, char **argv)
 
     if (argc > 1) {
         int c;
-        
+
         while (c != -1) {
             static struct option options[] = {
                 // Flags
@@ -204,7 +205,7 @@ int main(int argc, char **argv)
 
             switch (c) {
                 case 'h':
-                    usage();
+                    print_usage(stdout);
                     break;
 
                 case 'm':
@@ -224,23 +225,23 @@ int main(int argc, char **argv)
     mousemask(BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | BUTTON3_CLICKED, NULL);
     start_color();
 
-    init_pair(N1, COLOR_BLUE/* + 8*/, COLOR_WHITE);
+    init_pair(N1, COLOR_BLUE, COLOR_WHITE);
     init_pair(N2, COLOR_GREEN, COLOR_WHITE);
     init_pair(N3, COLOR_RED, COLOR_WHITE);
     init_pair(N4, COLOR_BLUE, COLOR_WHITE);
     init_pair(N5, COLOR_MAGENTA, COLOR_WHITE);
     init_pair(N6, COLOR_CYAN, COLOR_WHITE);
     init_pair(N7, COLOR_BLACK, COLOR_WHITE);
-    init_pair(N8, COLOR_BLACK/* + 8*/, COLOR_WHITE);
+    init_pair(N8, COLOR_BLACK, COLOR_WHITE);
 
     init_pair(VISIBLE, COLOR_WHITE, COLOR_WHITE);
-    init_pair(HIDDEN, COLOR_BLACK/* + 8*/, COLOR_BLACK/* + 8*/);
+    init_pair(HIDDEN, COLOR_BLACK, COLOR_BLACK);
 
-    init_pair(FLAG, COLOR_RED/* + 8*/, COLOR_BLACK/* + 8*/);
-    init_pair(QUERY, COLOR_BLACK, COLOR_BLACK/* + 8*/);
+    init_pair(FLAG, COLOR_RED, COLOR_BLACK);
+    init_pair(QUERY, COLOR_BLACK, COLOR_BLACK);
 
-    init_pair(MINE, COLOR_BLACK, COLOR_BLACK/* + 8*/);
-    init_pair(NMINE, COLOR_YELLOW/* + 8*/, COLOR_BLACK/* + 8*/);
+    init_pair(MINE, COLOR_BLACK, COLOR_BLACK);
+    init_pair(NMINE, COLOR_YELLOW, COLOR_BLACK);
 
     int width, height;
     getmaxyx(stdscr, width, height);
