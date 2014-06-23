@@ -20,5 +20,13 @@ typedef enum {
     NMINE, // COLOR_RED
 } Colorpairs;
 
+bool ginit();
+bool gcleanup();
+void board_clear();
+void set_game(Game *game);
+void draw_menu();
+void draw_status();
+void draw_board(bool failed);
+
 #define __GRAPHICS_H 1
 #endif

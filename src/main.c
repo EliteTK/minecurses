@@ -1,85 +1,16 @@
 // TODO: Clean this mess up.
 #include "minesweeper.h"
+#include "graphics.h"
 #include <ncurses.h>
 #include <stdlib.h>
 #include <math.h>
 #include <getopt.h>
-
-typedef enum {
-    N1 = 1, // COLOR_BLUE
-    N2, // COLOR_GREEN
-    N3, // COLOR_RED
-    N4, // COLOR_BLUE
-    N5, // COLOR_RED
-    N6, // COLOR_CYAN
-    N7, // COLOR_BLACK
-    N8, // COLOR_BLACK
-
-    VISIBLE, // COLOR_WHITE
-    HIDDEN, // COLOR_BLACK
-
-    FLAG, // COLOR_RED
-    QUERY, // COLOR_BLACK
-
-    MINE, // COLOR_BLACK
-    NMINE, // COLOR_RED
-} Colorpairs;
 
 static bool failed = false;
 static bool won = false;
 static Game *game;
 
 static float mine_density = 0;
-
-static inline void put_square(const Colorpairs cp, char c, bool bold)
-{
-    attron(COLOR_PAIR(cp) | (bold * A_BOLD));
-    addch(c);
-    attroff(COLOR_PAIR(cp) | (bold * A_BOLD));
-}
-
-static void draw_board()
-{
-    int x, y;
-    for (x = 0; x < game->sizex; x++)
-        for (y = 0; y < game->sizey; y++) {
-            move(x, y);
-
-            if (!ms_xy_resolve(game, x, y)->visible) {
-                if (failed && ms_xy_resolve(game, x, y)->mine && !ms_xy_resolve(game, x, y)->flag) {
-                    put_square(MINE, '*', true);
-                    continue;
-                }
-
-                if (ms_xy_resolve(game, x, y)->flag) {
-                    if (failed && !ms_xy_resolve(game, x, y)->mine) {
-                        put_square(NMINE, '*', true);
-                        continue;
-                    }
-
-                    put_square(FLAG, 'X', true);
-                    continue;
-                }
-
-                if (ms_xy_resolve(game, x, y)->query) {
-                    put_square(QUERY, '?', true);
-                    continue;
-                }
-
-                put_square(HIDDEN, ' ', false);
-                continue;
-            }
-
-            if (!ms_xy_resolve(game, x, y)->value) {
-                put_square(VISIBLE, ' ', false);
-                continue;
-            }
-
-            unsigned char value = ms_xy_resolve(game, x, y)->value;
-            put_square(value, value + '0', false);
-        }
-    refresh();
-}
 
 static void run_game()
 {
@@ -100,21 +31,22 @@ static void run_game()
                     cy = event.x; // Your guess is as good as mine.
                     if (event.bstate & BUTTON1_CLICKED) {
                         if (game->generated) {
-                            if (!ms_xy_resolve(game, cx, cy)->visible && !ms_xy_resolve(game, cx, cy)->flag)
+                            if (!ms_xy_resolve(game, cx, cy)->visible
+                                    && !ms_xy_resolve(game, cx, cy)->flag)
                                 failed = !ms_reveal(game, cx, cy);
                         } else {
                             ms_genmap(game, cx, cy);
                         }
-                        draw_board();
+                        draw_board(failed);
                     } else if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
                         if (game->generated) {
                             failed = !ms_reveal_aoe(game, cx, cy);
-                            draw_board();
+                            draw_board(failed);
                         }
                     } else if (event.bstate & BUTTON3_CLICKED) {
                         if (game->generated && !ms_xy_resolve(game, cx, cy)->visible) {
                             ms_flag_toggle(game, cx, cy);
-                            draw_board();
+                            draw_board(failed);
                         }
                     }
                 }
@@ -150,20 +82,20 @@ static void run_game()
                 } else {
                     ms_genmap(game, cx, cy);
                 }
-                draw_board();
+                draw_board(failed);
                 break;
 
             case 'R': // AOE Reveal.
                 if (game->generated) {
                     failed = !ms_reveal_aoe(game, cx, cy);
-                    draw_board();
+                    draw_board(failed);
                 }
                 break;
 
             case 'f': // Flag
                 if (game->generated && !ms_xy_resolve(game, cx, cy)->visible) {
                     ms_flag_toggle(game, cx, cy);
-                    draw_board();
+                    draw_board(failed);
                 }
                 break;
 
@@ -172,32 +104,32 @@ static void run_game()
         }
         move(cx, cy);
         if (failed) return;
+        if (ms_check_win(game)) {
+            won = true;
+            return;
+        }
     }
 }
 
 // Print usage and quit.
-static void print_usage(const int fd)
+static void print_usage(FILE *file)
 {
     fputs("Usage: minecurses [options]\n\n"
           "Options:\n"
           "  -h, --help\t\tshow this help message\n"
           "  -m, --mine-density\tset density of minefield [default: 0.15]\n",
-          fd);
+          file);
     exit(1);
 }
 
 static void getopts(int argc, char **argv)
 {
     if (argc > 1) {
-        int c;
+        int c = 0;
 
         while (c != -1) {
-            static struct option options[] = { // Why is this static?
-                // We're only in this function once, and we can declare this
-                // just before you enter the while loop and be done with it.
-                // Flags
+            static struct option options[] = {
                 {"help",         no_argument,         0, 'h'},
-                // Switches
                 {"mine-density", required_argument,   0, 'm'},
                 {0,              0,                   0, 0},
             };
@@ -221,54 +153,28 @@ static void getopts(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-
+    getopts(argc, argv);
     if (mine_density <= 0 || mine_density >= 1) mine_density = 0.15;
 
-    initscr();
-    clear();
-    noecho();
-    cbreak();
-    keypad(stdscr, TRUE);
-    mousemask(BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | BUTTON3_CLICKED, NULL);
-    start_color();
-
-    init_pair(N1, COLOR_BLUE, COLOR_WHITE);
-    init_pair(N2, COLOR_GREEN, COLOR_WHITE);
-    init_pair(N3, COLOR_RED, COLOR_WHITE);
-    init_pair(N4, COLOR_BLUE, COLOR_WHITE);
-    init_pair(N5, COLOR_MAGENTA, COLOR_WHITE);
-    init_pair(N6, COLOR_CYAN, COLOR_WHITE);
-    init_pair(N7, COLOR_BLACK, COLOR_WHITE);
-    init_pair(N8, COLOR_BLACK, COLOR_WHITE);
-
-    init_pair(VISIBLE, COLOR_WHITE, COLOR_WHITE);
-    init_pair(HIDDEN, COLOR_BLACK, COLOR_BLACK);
-
-    init_pair(FLAG, COLOR_RED, COLOR_BLACK);
-    init_pair(QUERY, COLOR_BLACK, COLOR_BLACK);
-
-    init_pair(MINE, COLOR_BLACK, COLOR_BLACK);
-    init_pair(NMINE, COLOR_YELLOW, COLOR_BLACK);
+    ginit();
 
     int width, height;
     getmaxyx(stdscr, width, height);
 
     game = ms_newgame(width, height, width * height * mine_density);
 
-    int x, y;
-    attron(COLOR_PAIR(HIDDEN));
-    for (x = 0; x < game->sizex; x++)
-        for (y = 0; y < game->sizey; y++)
-            addch(' ');
-    attroff(COLOR_PAIR(HIDDEN));
+    set_game(game);
+
+    board_clear();
 
     run_game();
 
     if (failed)
         getch();
 
+    gcleanup();
+
     ms_delgame(game);
-    endwin();
 
     return 0;
 }

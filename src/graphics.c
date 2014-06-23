@@ -1,8 +1,11 @@
 #include "minesweeper.h"
 #include "graphics.h"
 #include <stdlib.h>
+#include <ncurses.h>
 
-static int screenw, screenh;
+/*static int screenw, screenh;*/
+
+static Game* game;
 
 // Initialise graphics.
 bool ginit()
@@ -12,6 +15,9 @@ bool ginit()
     noecho();
     cbreak();
     start_color();
+
+    keypad(stdscr, TRUE);
+    mousemask(BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | BUTTON3_CLICKED, NULL);
 
     init_pair(N1, COLOR_BLUE, COLOR_WHITE);
     init_pair(N2, COLOR_GREEN, COLOR_WHITE);
@@ -31,6 +37,18 @@ bool ginit()
     init_pair(MINE, COLOR_BLACK, COLOR_BLACK);
     init_pair(NMINE, COLOR_YELLOW, COLOR_BLACK);
 
+    return true;
+}
+
+// Cleanup graphics.
+bool gcleanup()
+{
+    endwin();
+    return true;
+}
+
+void board_clear()
+{
     int x, y;
     attron(COLOR_PAIR(HIDDEN));
     for (x = 0; x < game->sizex; x++)
@@ -39,11 +57,10 @@ bool ginit()
     attroff(COLOR_PAIR(HIDDEN));
 }
 
-// Cleanup graphics.
-bool gcleanup()
+void set_game(Game *g)
 {
+    game = g;
 }
-
 
 static inline void put_square(const Colorpairs, char, bool);
 
@@ -55,7 +72,7 @@ void draw_status()
 {
 }
 
-void draw_board()
+void draw_board(bool failed)
 {
     int x, y;
     for (x = 0; x < game->sizex; x++)
@@ -103,9 +120,4 @@ static inline void put_square(const Colorpairs cp, char c, bool bold)
     attron(COLOR_PAIR(cp) | (bold * A_BOLD));
     addch(c);
     attroff(COLOR_PAIR(cp) | (bold * A_BOLD));
-}
-
-
-static inline update_screenwh()
-{
 }
