@@ -12,6 +12,38 @@ static Game *game;
 
 static float mine_density = 0;
 
+static void run_game();
+static void print_usage(FILE *);
+static void getopts(int, char **);
+
+int main(int argc, char **argv)
+{
+    getopts(argc, argv);
+    if (mine_density <= 0 || mine_density >= 1) mine_density = 0.15;
+
+    ginit();
+
+    int width, height;
+    getmaxyx(stdscr, width, height);
+
+    game = ms_newgame(width, height, width * height * mine_density);
+
+    set_game(game);
+
+    board_clear();
+
+    run_game();
+
+    if (failed)
+        getch();
+
+    gcleanup();
+
+    ms_delgame(game);
+
+    return 0;
+}
+
 static void run_game()
 {
     MEVENT event;
@@ -149,32 +181,4 @@ static void getopts(int argc, char **argv)
             }
         }
     }
-}
-
-int main(int argc, char **argv)
-{
-    getopts(argc, argv);
-    if (mine_density <= 0 || mine_density >= 1) mine_density = 0.15;
-
-    ginit();
-
-    int width, height;
-    getmaxyx(stdscr, width, height);
-
-    game = ms_newgame(width, height, width * height * mine_density);
-
-    set_game(game);
-
-    board_clear();
-
-    run_game();
-
-    if (failed)
-        getch();
-
-    gcleanup();
-
-    ms_delgame(game);
-
-    return 0;
 }
