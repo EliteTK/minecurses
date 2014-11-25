@@ -7,27 +7,29 @@
 #include <getopt.h>
 
 typedef enum {
-    N1 = 1, // COLOR_BLUE
-    N2, // COLOR_GREEN
-    N3, // COLOR_RED
-    N4, // COLOR_BLUE
-    N5, // COLOR_RED
-    N6, // COLOR_CYAN
-    N7, // COLOR_BLACK
-    N8, // COLOR_BLACK
+    N1 = 1,	// COLOR_BLUE
+    N2,		// COLOR_GREEN
+    N3,		// COLOR_RED
+    N4,		// COLOR_BLUE
+    N5,		// COLOR_RED
+    N6,		// COLOR_CYAN
+    N7,		// COLOR_BLACK
+    N8,		// COLOR_BLACK
 
-    VISIBLE, // COLOR_WHITE
-    HIDDEN, // COLOR_BLACK
+    VISIBLE,	// COLOR_WHITE
+    HIDDEN,	// COLOR_BLACK
 
-    FLAG, // COLOR_RED
-    QUERY, // COLOR_BLACK
+    FLAG,	// COLOR_RED
+    QUERY,	// COLOR_BLACK
 
-    MINE, // COLOR_BLACK
-    NMINE, // COLOR_RED
+    MINE,	// COLOR_BLACK
+    NMINE	// COLOR_RED
 } Colorpairs;
 
 static bool failed = false;
 static Game *game;
+
+static bool hi_vis = false;
 
 static inline void put_square(const Colorpairs cp, char c, bool bold)
 {
@@ -36,7 +38,7 @@ static inline void put_square(const Colorpairs cp, char c, bool bold)
     attroff(COLOR_PAIR(cp) | (bold * A_BOLD));
 }
 
-static void draw_board()
+static void draw_board(int cx, int cy)
 {
     int x, y;
     for (x = 0; x < game->sizex; x++)
@@ -64,12 +66,18 @@ static void draw_board()
                     continue;
                 }
 
-                put_square(HIDDEN, ' ', false);
+                if (cx == x && cy == y && hi_vis)
+                    put_square(HIDDEN, '#', false);
+                else
+                    put_square(HIDDEN, ' ', false);
                 continue;
             }
 
             if (!ms_getvalue(game, x, y)) {
-                put_square(VISIBLE, ' ', false);
+                if (cx == x && cy == y && hi_vis)
+                    put_square(VISIBLE, '#', false);
+                else
+                    put_square(VISIBLE, ' ', false);
                 continue;
             }
 
@@ -91,83 +99,85 @@ static void run_game()
     while (!failed) {
         c = getch();
         switch (c) {
-            // Mouse input.
-            case KEY_MOUSE:
-                if (getmouse(&event) == OK) {
-                    cx = event.y; // No, I don't know why.
-                    cy = event.x; // Your guess is as good as mine.
-                    if (event.bstate & BUTTON1_CLICKED) {
-                        if (game->generated) {
-                            if (!ms_getvisible(game, cx, cy) && !ms_getflag(game, cx, cy))
-                                failed = !ms_reveal(game, cx, cy);
-                        } else {
-                            ms_genmap(game, cx, cy);
-                        }
-                        draw_board();
-                    } else if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
-                        if (game->generated) {
-                            failed = !ms_reveal_aoe(game, cx, cy);
-                            draw_board();
-                        }
-                    } else if (event.bstate & BUTTON3_CLICKED) {
-                        if (game->generated && !ms_getvisible(game, cx, cy)) {
-                            ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
-                            draw_board();
-                        }
+        // Mouse input.
+        case KEY_MOUSE:
+            if (getmouse(&event) == OK) {
+                cx = event.y; // No, I don't know why.
+                cy = event.x; // Your guess is as good as mine.
+                if (event.bstate & BUTTON1_CLICKED) {
+                    if (game->generated) {
+                        if (!ms_getvisible(game, cx, cy) && !ms_getflag(game, cx, cy))
+                            failed = !ms_reveal(game, cx, cy);
+                    } else {
+                        ms_genmap(game, cx, cy);
+                    }
+                    draw_board(cx, cy);
+                } else if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
+                    if (game->generated) {
+                        failed = !ms_reveal_aoe(game, cx, cy);
+                        draw_board(cx, cy);
+                    }
+                } else if (event.bstate & BUTTON3_CLICKED) {
+                    if (game->generated && !ms_getvisible(game, cx, cy)) {
+                        ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
+                        draw_board(cx, cy);
                     }
                 }
+            }
 
-                break;
+            break;
 
-                // Cursor motion.
-            case 'w': case 'k':
-                if (cx > 0) cx--; break;
-            case 'W': case 'K':
-                if (cx > 4) cx -= 5; break;
+            // Cursor motion.
+        case 'w': case 'k':
+            if (cx > 0) cx--; break;
+        case 'W': case 'K':
+            if (cx > 4) cx -= 5; break;
 
-            case 's': case 'j':
-                if (cx < (game->sizex - 1)) cx++; break;
-            case 'S': case 'J':
-                if (cx < (game->sizex - 5)) cx += 5; break;
+        case 's': case 'j':
+            if (cx < (game->sizex - 1)) cx++; break;
+        case 'S': case 'J':
+            if (cx < (game->sizex - 5)) cx += 5; break;
 
-            case 'a': case 'h':
-                if (cy > 0) cy--; break;
-            case 'A': case 'H':
-                if (cy > 4) cy -= 5; break;
+        case 'a': case 'h':
+            if (cy > 0) cy--; break;
+        case 'A': case 'H':
+            if (cy > 4) cy -= 5; break;
 
-            case 'd': case 'l':
-                if (cy < (game->sizey - 1)) cy++; break;
-            case 'D': case 'L':
-                if (cy < (game->sizey - 5)) cy += 5; break;
+        case 'd': case 'l':
+            if (cy < (game->sizey - 1)) cy++; break;
+        case 'D': case 'L':
+            if (cy < (game->sizey - 5)) cy += 5; break;
 
 
-            case 'r': // Reveal.
-                if (game->generated) {
-                    if (!ms_getvisible(game, cx, cy))
-                        failed = !ms_reveal(game, cx, cy);
-                } else {
-                    ms_genmap(game, cx, cy);
-                }
-                draw_board();
-                break;
+        case 'r': // Reveal.
+            if (game->generated) {
+                if (!ms_getvisible(game, cx, cy))
+                    failed = !ms_reveal(game, cx, cy);
+            } else {
+                ms_genmap(game, cx, cy);
+            }
+            /*draw_board();*/
+            break;
 
-            case 'R': // AOE Reveal.
-                if (game->generated) {
-                    failed = !ms_reveal_aoe(game, cx, cy);
-                    draw_board();
-                }
-                break;
+        case 'R': // AOE Reveal.
+            if (game->generated) {
+                failed = !ms_reveal_aoe(game, cx, cy);
+                /*draw_board();*/
+            }
+            break;
 
-            case 'f': // Flag
-                if (game->generated && !ms_getvisible(game, cx, cy)) {
-                    ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
-                    draw_board();
-                }
-                break;
+        case 'f': // Flag
+            if (game->generated && !ms_getvisible(game, cx, cy)) {
+                ms_setflag(game, cx, cy, !ms_getflag(game, cx, cy));
+                /*draw_board();*/
+            }
+            break;
 
-            case 'q': // Quit
-                return;
+        case 'q': // Quit
+            return;
         }
+
+        draw_board(cx, cy);
         move(cx, cy);
         if (failed) return;
     }
@@ -177,8 +187,9 @@ void usage()
 {
     fputs("Usage: minecurses [options]\n\n"
           "Options:\n"
-          "  -h, --help\t\tshow this help message\n"
-          "  -m, --mine-density\tset density of minefield [default: 0.15]\n",
+          "  -h, --help		show this help message\n"
+          "  -m, --mine-density	set density of minefield [default: 0.15]\n"
+          "  -c, --cursor	turn on character cursor mode (uses # as cursor)\n",
           stderr);
     exit(1);
 }
@@ -189,23 +200,28 @@ int main(int argc, char **argv)
 
     if (argc > 1) {
         int c;
-        
+
         while (c != -1) {
             static struct option options[] = {
                 // Flags
-                {"help",         no_argument,         0, 'h'},
+                {"help",		no_argument,		0, 'h'},
+                {"cursor",		no_argument,		0, 'c'},
                 // Switches
-                {"mine-density", required_argument,   0, 'm'},
+                {"mine-density",	required_argument,	0, 'm'},
                 {0,              0,                   0, 0},
             };
 
             int option_index = 0;
 
-            c = getopt_long(argc, argv, "hm:", options, &option_index);
+            c = getopt_long(argc, argv, "hcm:", options, &option_index);
 
             switch (c) {
                 case 'h':
                     usage();
+                    break;
+
+                case 'c':
+                    hi_vis = true;
                     break;
 
                 case 'm':
@@ -225,23 +241,23 @@ int main(int argc, char **argv)
     mousemask(BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | BUTTON3_CLICKED, NULL);
     start_color();
 
-    init_pair(N1, COLOR_BLUE/* + 8*/, COLOR_WHITE);
-    init_pair(N2, COLOR_GREEN, COLOR_WHITE);
-    init_pair(N3, COLOR_RED, COLOR_WHITE);
-    init_pair(N4, COLOR_BLUE, COLOR_WHITE);
-    init_pair(N5, COLOR_MAGENTA, COLOR_WHITE);
-    init_pair(N6, COLOR_CYAN, COLOR_WHITE);
-    init_pair(N7, COLOR_BLACK, COLOR_WHITE);
-    init_pair(N8, COLOR_BLACK/* + 8*/, COLOR_WHITE);
+    init_pair(N1,	COLOR_BLUE,	COLOR_WHITE);
+    init_pair(N2,	COLOR_GREEN,	COLOR_WHITE);
+    init_pair(N3,	COLOR_RED,	COLOR_WHITE);
+    init_pair(N4,	COLOR_BLUE,	COLOR_WHITE);
+    init_pair(N5,	COLOR_MAGENTA,	COLOR_WHITE);
+    init_pair(N6,	COLOR_CYAN,	COLOR_WHITE);
+    init_pair(N7,	COLOR_BLACK,	COLOR_WHITE);
+    init_pair(N8,	COLOR_BLACK,	COLOR_WHITE);
 
-    init_pair(VISIBLE, COLOR_WHITE, COLOR_WHITE);
-    init_pair(HIDDEN, COLOR_BLACK/* + 8*/, COLOR_BLACK/* + 8*/);
+    init_pair(VISIBLE,	COLOR_BLACK,	COLOR_WHITE);
+    init_pair(HIDDEN,	COLOR_WHITE,	COLOR_BLACK);
 
-    init_pair(FLAG, COLOR_RED/* + 8*/, COLOR_BLACK/* + 8*/);
-    init_pair(QUERY, COLOR_BLACK, COLOR_BLACK/* + 8*/);
+    init_pair(FLAG,	COLOR_RED,	COLOR_BLACK);
+    init_pair(QUERY,	COLOR_BLACK,	COLOR_BLACK); /* Not used. */
 
-    init_pair(MINE, COLOR_BLACK, COLOR_BLACK/* + 8*/);
-    init_pair(NMINE, COLOR_YELLOW/* + 8*/, COLOR_BLACK/* + 8*/);
+    init_pair(MINE,	COLOR_WHITE,	COLOR_BLACK);
+    init_pair(NMINE,	COLOR_YELLOW,	COLOR_BLACK);
 
     int width, height;
     getmaxyx(stdscr, width, height);
