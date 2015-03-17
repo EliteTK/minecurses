@@ -22,5 +22,9 @@
 *.x86_64
 *.hex
 
-# OUTFILE
+# Output
 minecurses
+
+# ctags/etags
+tags
+TAGS

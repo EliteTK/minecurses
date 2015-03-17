@@ -1,7 +1,8 @@
 CFLAGS = -std=gnu11 -Wall -Wextra
 LDFLAGS = -Wl,--as-needed
 LDLIBS = -lncurses
-OBJECTS = main.o minesweeper.o
+OBJECTS = main.o minesweeper.o config.o visual.o
+TESTS = test_config
 BINARY = minecurses
 
 INSTALL = install -m755
@@ -12,7 +13,7 @@ DEBUG ?= 0
 ifeq ($(DEBUG), 1)
 	CFLAGS += -Og -g
 else
-	CFLAGS += -flto -O2 -DNDEBUG
+	CFLAGS += -flto -O2
 	LDFLAGS += -flto -O2
 endif
 
@@ -23,6 +24,14 @@ minecurses: $(OBJECTS)
 
 main.o: main.c minesweeper.h
 minesweeper.o: minesweeper.c minesweeper.h
+
+check: $(TESTS)
+	@./test_config
+
+test_config: config.o test_config.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+test_config.o: test_config.c config.c config.h
 
 install: $(BINARY)
 	$(INSTALL) $^ $(DESTDIR)$(PREFIX)/bin
